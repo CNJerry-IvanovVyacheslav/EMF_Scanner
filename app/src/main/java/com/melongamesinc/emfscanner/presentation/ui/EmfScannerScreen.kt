@@ -5,7 +5,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +25,6 @@ import com.melongamesinc.emfscanner.presentation.viewmodels.EmfViewModel
 @Composable
 fun EmfScannerScreen() {
     val viewModel: EmfViewModel = hiltViewModel()
-
     val state by viewModel.uiState.collectAsState()
 
     val animatedMagnitude by animateFloatAsState(
@@ -41,7 +43,9 @@ fun EmfScannerScreen() {
     val animatedColor by animateColorAsState(targetColor, label = "ColorAnimation")
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -71,7 +75,34 @@ fun EmfScannerScreen() {
         Text(
             text = state?.level?.name ?: "INITIALIZING...",
             style = MaterialTheme.typography.headlineSmall,
-            color = animatedColor
+            color = animatedColor,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        if (state?.isTared == true) {
+            OutlinedButton(
+                onClick = { viewModel.resetCalibration() },
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+            ) {
+                Text("RESET CALIBRATION")
+            }
+        } else {
+            Button(
+                onClick = { viewModel.calibrate() },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155))
+            ) {
+                Text("CALIBRATE (TARE)")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Raw Sensor: ${String.format("%.1f", state?.rawMicroTesla ?: 0f)} µT",
+            fontSize = 12.sp,
+            color = Color.Gray
         )
     }
 }
