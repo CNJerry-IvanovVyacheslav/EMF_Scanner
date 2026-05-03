@@ -2,7 +2,7 @@
 
 A pet project focused on handling high-frequency hardware sensor data, implementing Clean Architecture, and rendering real-time graphics using Jetpack Compose Canvas.
 
-<img src= "https://github.com/CNJerry-IvanovVyacheslav/EMF_Scanner/blob/06bd8d02f7afdedb5d0da2a1edd8765e896ba427/media/photo_2026-05-03_11-58-30.jpg" width="250"> <img src= "https://github.com/CNJerry-IvanovVyacheslav/EMF_Scanner/blob/06bd8d02f7afdedb5d0da2a1edd8765e896ba427/media/photo_2026-05-03_11-58-34.jpg" width="250">
+<img src="https://github.com/CNJerry-IvanovVyacheslav/EMF_Scanner/blob/8833aad29c03d89a4491e728ecdd273baf08fd67/media/photo_2026-05-03_11-58-34.jpg" width="250"> <img src="https://github.com/CNJerry-IvanovVyacheslav/EMF_Scanner/blob/8833aad29c03d89a4491e728ecdd273baf08fd67/media/photo_2026-05-03_11-58-30.jpg" width="250">
 
 ## Tech Stack & Architecture
 * **Kotlin** (Coroutines, Flow)
@@ -24,3 +24,9 @@ The resulting value is measured in micro-Tesla (µT).
 Smartphones generate significant internal magnetic noise due to components like speakers, vibration motors, and OIS coils.
 * **Hardware Calibration (HAL):** The app relies on the Android Hardware Abstraction Layer (HAL) to filter out hard-iron bias (triggered natively when the user moves the device in a figure-8 pattern).
 * **Software Calibration (Tare):** Added a baseline calibration feature in the Domain layer. It captures the current environmental background (usually 40-60 µT for Earth's magnetic field + room interference) and calculates the delta. This allows the UI to visualize only active local anomalies (e.g., a power adapter) rather than static environmental noise.
+
+### 4. Real-time Oscilloscope & Signal Processing
+To track dynamic changes in the magnetic field, the app features a real-time oscilloscope and statistical analyzer:
+* **Moving Window:** High-frequency sensor data is buffered using an `ArrayDeque` in the ViewModel. This creates a fixed-size sliding window (e.g., 200 samples) to prevent memory leaks while providing enough history for analysis.
+* **Real-time Statistics:** The app calculates Min, Max, Average, and Variance on the fly from the current data queue, allowing users to distinguish between random sensor noise and stable electromagnetic sources.
+* **Advanced Canvas Rendering:** The oscilloscope is drawn using a single continuous `Path` inside a `clipRect` boundaries. A dynamic `Brush.verticalGradient` maps severity thresholds directly to the Y-axis coordinates, instantly coloring the waveform based on the signal's strength without triggering expensive UI recompositions.
