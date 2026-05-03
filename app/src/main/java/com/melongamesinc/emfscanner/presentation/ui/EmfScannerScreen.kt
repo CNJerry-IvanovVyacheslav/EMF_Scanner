@@ -3,24 +3,23 @@ package com.melongamesinc.emfscanner.presentation.ui
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.melongamesinc.emfscanner.domain.models.EmfLevel
+import com.melongamesinc.emfscanner.presentation.ui.components.CalibrationButtons
+import com.melongamesinc.emfscanner.presentation.ui.components.EmfOscilloscope
+import com.melongamesinc.emfscanner.presentation.ui.components.EmfRadarView
 import com.melongamesinc.emfscanner.presentation.viewmodels.EmfViewModel
+import com.melongamesinc.emfscanner.utils.getEmfColor
 
 @Composable
 fun EmfScannerScreen() {
@@ -29,102 +28,98 @@ fun EmfScannerScreen() {
 
     val animatedMagnitude by animateFloatAsState(
         targetValue = state?.microTesla ?: 0f,
-        animationSpec = tween(durationMillis = 500),
+        animationSpec = tween(durationMillis = 300),
         label = "MagnitudeAnimation"
     )
 
-    val targetColor = when (state?.level) {
-        EmfLevel.NORMAL -> Color(0xFF00E676)
-        EmfLevel.WARNING -> Color(0xFFFFD600)
-        EmfLevel.DANGER -> Color(0xFFFF1744)
-        null -> Color.Gray
-    }
-
+    val targetColor = getEmfColor(state?.level)
     val animatedColor by animateColorAsState(targetColor, label = "ColorAnimation")
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFF0F172A))
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(300.dp)
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
         ) {
             EmfRadarView(magnitude = animatedMagnitude, color = animatedColor)
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = String.format("%.1f", animatedMagnitude),
-                    fontSize = 48.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 54.sp,
+                    fontWeight = FontWeight.Black,
                     color = animatedColor
                 )
-                Text(
-                    text = "µT",
-                    fontSize = 18.sp,
-                    color = Color.Gray
-                )
+                Text(text = "µT", fontSize = 18.sp, color = Color.Gray)
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Text(
-            text = state?.level?.name ?: "INITIALIZING...",
-            style = MaterialTheme.typography.headlineSmall,
-            color = animatedColor,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(48.dp))
-
-        if (state?.isTared == true) {
-            OutlinedButton(
-                onClick = { viewModel.resetCalibration() },
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
-            ) {
-                Text("RESET CALIBRATION")
-            }
-        } else {
-            Button(
-                onClick = { viewModel.calibrate() },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155))
-            ) {
-                Text("CALIBRATE (TARE)")
-            }
+        state?.let {
+            StatsRow(min = it.min, avg = it.avg, max = it.max)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp)
+                .background(Color(0xFF1E293B), RoundedCornerShape(12.dp))
+                .padding(8.dp)
+        ) {
+            state?.let {
+                EmfOscilloscope(
+                    history = it.history,
+                    historyLimit = it.historyLimit
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        CalibrationButtons(
+            isTared = state?.isTared ?: false,
+            onCalibrate = { viewModel.calibrate() },
+            onReset = { viewModel.resetCalibration() }
+        )
+
         Text(
             text = "Raw Sensor: ${String.format("%.1f", state?.rawMicroTesla ?: 0f)} µT",
             fontSize = 12.sp,
-            color = Color.Gray
+            color = Color.Gray,
+            modifier = Modifier.padding(top = 8.dp)
         )
     }
 }
 
 @Composable
-fun EmfRadarView(magnitude: Float, color: Color) {
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val radiusScale = (magnitude.coerceIn(30f, 200f) / 200f) * size.minDimension / 2
+fun StatsRow(min: Float, avg: Float, max: Float) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        StatItem(label = "MIN", value = min)
+        StatItem(label = "AVG", value = avg, isHighlight = true)
+        StatItem(label = "MAX", value = max)
+    }
+}
 
-        drawCircle(
-            color = color,
-            radius = radiusScale,
-            center = this.center,
-            style = Stroke(width = 4.dp.toPx()),
-            alpha = 0.5f
-        )
-
-        drawCircle(
-            color = color,
-            radius = radiusScale * 0.8f,
-            center = this.center,
-            alpha = 0.1f
+@Composable
+fun StatItem(label: String, value: Float, isHighlight: Boolean = false) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = label, fontSize = 12.sp, color = Color.Gray)
+        Text(
+            text = String.format("%.1f", value),
+            fontSize = 18.sp,
+            fontWeight = if (isHighlight) FontWeight.Bold else FontWeight.Normal,
+            color = if (isHighlight) Color.White else Color.LightGray
         )
     }
 }

@@ -8,17 +8,34 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
 class EmfViewModel @Inject constructor(
-    observeEmfStateUseCase: ObserveEmfStateUseCase
+    private val observeEmfStateUseCase: ObserveEmfStateUseCase
 ) : ViewModel() {
 
     private val baselineFlow = MutableStateFlow(0f)
+    private val historyLimit = 200
+    private val historyQueue = ArrayDeque<Float>(historyLimit)
 
     val uiState: StateFlow<EmfState?> = observeEmfStateUseCase(baselineFlow)
+        .map { state ->
+            if (historyQueue.size >= historyLimit) historyQueue.removeFirst()
+            historyQueue.addLast(state.microTesla)
+
+            val currentHistory = historyQueue.toList()
+
+            state.copy(
+                min = currentHistory.minOrNull() ?: 0f,
+                max = currentHistory.maxOrNull() ?: 0f,
+                avg = currentHistory.average().toFloat(),
+                history = currentHistory,
+                historyLimit = this.historyLimit
+            )
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
