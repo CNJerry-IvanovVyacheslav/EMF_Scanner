@@ -2,6 +2,8 @@
 
 A pet project focused on handling high-frequency hardware sensor data, implementing Clean Architecture, and rendering real-time graphics using Jetpack Compose Canvas.
 
+<img src= "https://github.com/CNJerry-IvanovVyacheslav/EMF_Scanner/blob/06bd8d02f7afdedb5d0da2a1edd8765e896ba427/media/photo_2026-05-03_11-58-30.jpg" width="250"> <img src= "https://github.com/CNJerry-IvanovVyacheslav/EMF_Scanner/blob/06bd8d02f7afdedb5d0da2a1edd8765e896ba427/media/photo_2026-05-03_11-58-34.jpg" width="250">
+
 ## Tech Stack & Architecture
 * **Kotlin** (Coroutines, Flow)
 * **UI:** Jetpack Compose (using Canvas for 60fps rendering without full UI tree recompositions).
